@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meet Up</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FDFAF5;
+    --navy: #002B5C;
+    --navy-dark: #001A3A;
+    --navy-hover: #003870;
+    --red: #E85234;
+    --peach: #F9B8AF;
+    --peach-dark: #E8896E;
+    --muted: #6B8EB5;
+    --card-bg: #FFFFFF;
+    --free-bg: #FEF0EE;
+    --busy-bg: #FDECEA;
+    --slot-unset: #F0F0F0;
+    --slot-free: #002B5C;
+    --slot-busy: #E85234;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--navy);
+    font-family: 'Lato', sans-serif;
+    min-height: 100vh;
+    font-size: 15px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(circle, #F9B8AF66 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 44px 20px 80px;
+  }
+
+  header { text-align: center; margin-bottom: 40px; }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 62px;
+    letter-spacing: -1px;
+    line-height: 1;
+    color: var(--red);
+  }
+  .logo-bubble {
+    display: inline-block;
+    background: var(--navy);
+    color: white;
+    border-radius: 50px;
+    padding: 2px 22px 8px;
+    margin-left: 6px;
+    font-style: italic;
+    transform: rotate(-2deg);
+    box-shadow: 0 4px 0 var(--navy-dark);
+  }
+  .tagline { color: var(--muted); font-size: 14px; margin-top: 12px; font-weight: 700; }
+
+  .step-indicator { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 28px; }
+  .step-dot { height: 8px; width: 8px; border-radius: 50%; background: #DDD; transition: all 0.3s; }
+  .step-dot.active { background: var(--peach); width: 28px; border-radius: 4px; }
+  .step-dot.done   { background: var(--peach); opacity: 0.6; }
+
+  .card {
+    background: var(--card-bg);
+    border: 2px solid var(--peach);
+    border-radius: 24px;
+    padding: 28px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 0 var(--peach), 0 8px 24px rgba(0,43,92,0.07);
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+  }
+
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .step-num {
+    background: var(--navy); color: white;
+    font-family: 'Playfair Display', serif; font-weight: 800; font-size: 14px;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .card-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 800; color: var(--navy); }
+  .card-sub   { color: var(--muted); font-size: 13px; margin-bottom: 20px; padding-left: 40px; font-weight: 700; line-height: 1.5; }
+
+  label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+  .field { margin-bottom: 14px; }
+
+  input[type=text] {
+    display: block; width: 100%;
+    background: var(--bg); border: 2px solid var(--peach); border-radius: 50px;
+    padding: 9px 16px; font-family: 'Lato', sans-serif; font-size: 14px; font-weight: 700;
+    color: var(--navy); outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type=date] {
+    display: block; width: 100%;
+    background: var(--bg); border: 2px solid var(--peach); border-radius: 50px;
+    padding: 7px 12px; font-family: 'Lato', sans-serif; font-size: 13px; font-weight: 700;
+    color: var(--navy); outline: none; min-width: 0;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type=text]:focus, input[type=date]:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(0,43,92,0.1); }
+  .date-row { display: flex; gap: 10px; }
+  .date-row .field { flex: 1; min-width: 0; }
+
+  .btn {
+    display: inline-block; cursor: pointer;
+    font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700;
+    border: none; border-radius: 50px; padding: 12px 26px; letter-spacing: 0.2px;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.1s;
+    background: var(--navy); color: white; box-shadow: 0 3px 0 var(--navy-dark);
+  }
+  .btn:hover  { background: var(--navy-hover); transform: translateY(-1px); box-shadow: 0 5px 0 var(--navy-dark); }
+  .btn:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--navy-dark); }
+  .btn-full   { width: 100%; text-align: center; display: block; }
+  .btn-sm     { padding: 8px 18px; font-size: 14px; }
+  .btn-outline { background: transparent; color: var(--navy); border: 2px solid var(--peach); box-shadow: none; }
+  .btn-outline:hover { background: var(--free-bg); transform: none; box-shadow: none; }
+
+  .notice {
+    background: var(--free-bg); border: 2px solid var(--peach); border-radius: 12px;
+    padding: 10px 16px; font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 16px;
+  }
+
+  /* ── HOURLY GRID ── */
+  .grid-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .hour-grid {
+    display: grid;
+    min-width: 480px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid var(--peach);
+  }
+  /* columns: time label + one per day */
+  .grid-header {
+    display: contents;
+  }
+  .grid-header-cell {
+    background: var(--navy);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    padding: 8px 4px;
+    letter-spacing: 0.04em;
+  }
+  .grid-header-cell.time-col { background: var(--navy-dark); }
+
+  .grid-row { display: contents; }
+  .time-label {
+    background: #F8F4EF;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    border-top: 1px solid #EEE;
+    white-space: nowrap;
+    min-height: 36px;
+  }
+  .slot {
+    min-height: 36px;
+    border-top: 1px solid #EEE;
+    border-left: 1px solid #EEE;
+    cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .slot.unset { background: var(--slot-unset); }
+  .slot.free  { background: var(--slot-free); }
+  .slot.busy  { background: var(--slot-busy); }
+  .slot:hover { opacity: 0.85; }
+
+  /* legend */
+  .slot-legend {
+    display: flex; gap: 16px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
+  .legend-swatch { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
+
+  .drag-instruction {
+    font-size: 12px; color: var(--muted); font-weight: 700;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+  }
+
+  /* drag mode toggle */
+  .mode-toggle {
+    display: flex; gap: 8px; margin-bottom: 16px;
+  }
+  .mode-btn {
+    flex: 1; padding: 8px; border-radius: 50px; border: 2px solid var(--peach);
+    background: white; font-family: 'Lato', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; color: var(--muted); transition: all 0.15s; text-align: center;
+  }
+  .mode-btn.active-free { background: var(--navy); border-color: var(--navy); color: white; }
+  .mode-btn.active-busy { background: var(--red);  border-color: var(--red);  color: white; }
+
+  /* RESULTS */
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .results-title  { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 800; color: var(--navy); }
+
+  /* heatmap grid */
+  .heat-grid {
+    display: grid;
+    min-width: 480px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid var(--peach);
+    margin-bottom: 16px;
+  }
+  .heat-header-cell {
+    background: var(--navy); color: white;
+    font-size: 11px; font-weight: 700;
+    text-align: center; padding: 8px 4px;
+    letter-spacing: 0.04em;
+  }
+  .heat-header-cell.time-col { background: var(--navy-dark); }
+  .heat-time {
+    background: #F8F4EF; font-size: 10px; font-weight: 700; color: var(--muted);
+    padding: 0 8px; display: flex; align-items: center;
+    border-top: 1px solid #EEE; white-space: nowrap; min-height: 36px;
+  }
+  .heat-cell {
+    min-height: 36px;
+    border-top: 1px solid #EEE;
+    border-left: 1px solid #EEE;
+    position: relative;
+    cursor: default;
+  }
+  .heat-cell .heat-bar {
+    position: absolute; inset: 0;
+    transition: background 0.3s;
+  }
+  .heat-cell .heat-label {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .heat-cell:hover .heat-label { opacity: 1; }
+
+  /* PARTICIPANTS */
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 10px; }
+  .participant-list { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+  .participant-chip {
+    background: var(--bg); border: 2px solid var(--peach); border-radius: 50px;
+    padding: 4px 12px 4px 7px; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px; color: var(--navy);
+  }
+  .chip-avatar { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; }
+
+  /* SHARE */
+  .share-box {
+    background: var(--free-bg); border: 2px dashed var(--peach); border-radius: 14px;
+    padding: 14px 16px; display: flex; align-items: center; gap: 10px; margin-top: 14px;
+  }
+  .share-code { font-family: monospace; font-size: 11px; font-weight: 700; color: var(--navy); flex: 1; word-break: break-all; }
+  .copy-btn {
+    background: var(--navy); border: none; border-radius: 50px; padding: 8px 16px;
+    font-size: 13px; cursor: pointer; color: white; font-family: 'Lato', sans-serif;
+    font-weight: 700; white-space: nowrap; transition: background 0.2s; box-shadow: 0 2px 0 var(--navy-dark);
+  }
+  .copy-btn:hover  { background: var(--navy-hover); }
+  .copy-btn.copied { background: var(--peach-dark); }
+
+  .divider  { border: none; border-top: 2px solid var(--peach); margin: 20px 0; }
+  .row      { display: flex; gap: 10px; align-items: center; }
+  .flex-1   { flex: 1; }
+  .view     { display: none; }
+  .view.active { display: block; }
+  .join-link { text-align: center; margin-top: 12px; font-size: 14px; font-weight: 700; }
+  .join-link span { color: var(--muted); }
+  .join-link a { color: var(--navy); cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">meet<span class="logo-bubble">up</span></div>
+    <p class="tagline">📅 Find the best time for everyone</p>
+  </header>
+
+  <div class="step-indicator">
+    <div class="step-dot active" id="dot0"></div>
+    <div class="step-dot" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+  </div>
+
+  <!-- ── VIEW 0: CREATE ── -->
+  <div class="view active" id="view-create">
+    <div class="card">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="card-title">Set up your meetup</div>
+      </div>
+      <div class="card-sub">Fill in the details — you'll mark your availability on the next screen.</div>
+
+      <div class="field">
+        <label>Event name</label>
+        <input type="text" id="event-name" placeholder="e.g. Weekend hike, Birthday dinner…" />
+      </div>
+      <div class="date-row">
+        <div class="field">
+          <label>From</label>
+          <input type="date" id="date-from" />
+        </div>
+        <div class="field">
+          <label>To</label>
+          <input type="date" id="date-to" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Your name</label>
+        <input type="text" id="creator-name" placeholder="So others know who made this" />
+      </div>
+      <button class="btn btn-full" style="margin-top:10px" onclick="handleCreateEvent()">
+        Next: Mark your availability →
+      </button>
+    </div>
+
+    <div class="join-link">
+      <span>Have a link? </span>
+      <a onclick="showJoin()">Join an existing meetup</a>
+    </div>
+
+    <div id="join-area" style="display:none; margin-top:14px">
+      <div class="card">
+        <div class="step-header" style="margin-bottom:16px">
+          <div class="step-num" style="background:var(--red)">↩</div>
+          <div class="card-title">Join a meetup</div>
+        </div>
+        <div class="field">
+          <label>Meetup link or code</label>
+          <div class="row">
+            <input type="text" id="join-code" placeholder="Paste link here" style="flex:1" />
+            <button class="btn btn-sm" onclick="handleJoinEvent()">Join</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Your name</label>
+          <input type="text" id="join-name" placeholder="Your name" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VIEW 1: AVAILABILITY ── -->
+  <div class="view" id="view-avail">
+    <div class="card">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="card-title" id="avail-event-title">Your Event</div>
+      </div>
+      <div class="card-sub">Click a mode below, then click and drag across the time slots for each day.</div>
+
+      <div class="notice">Responding as <strong id="responder-name-display">—</strong></div>
+
+      <!-- mode toggle -->
+      <div class="mode-toggle">
+        <button class="mode-btn active-free" id="mode-free" onclick="setMode('free')">✓ I'm Free</button>
+        <button class="mode-btn" id="mode-busy" onclick="setMode('busy')">✕ I'm Busy</button>
+      </div>
+
+      <!-- legend -->
+      <div class="slot-legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--slot-free)"></div>Free</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--slot-busy)"></div>Busy</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--slot-unset)"></div>Not set</div>
+      </div>
+
+      <div class="drag-instruction">☝️ Click and drag to mark multiple slots at once</div>
+
+      <div class="grid-wrap">
+        <div class="hour-grid" id="avail-grid"></div>
+      </div>
+
+      <hr class="divider">
+      <div class="row">
+        <button class="btn btn-outline btn-sm" onclick="goBack()">← Back</button>
+        <div class="flex-1"></div>
+        <button class="btn" onclick="handleSubmitAvailability()">Submit & see results →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VIEW 2: RESULTS ── -->
+  <div class="view" id="view-results">
+    <div class="card">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="card-title" id="results-event-title">Your Event</div>
+      </div>
+      <div class="card-sub" id="results-sub">Share the link so friends can add their availability.</div>
+
+      <span class="section-label">Who's responded</span>
+      <div class="participant-list" id="participant-list"></div>
+
+      <hr class="divider" style="margin-top:4px">
+
+      <div class="results-header">
+        <span class="results-title">Availability heatmap ✅</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px;">Hover a slot to see the count. Darker = more people free.</div>
+      <div class="grid-wrap">
+        <div class="heat-grid" id="results-grid"></div>
+      </div>
+
+      <hr class="divider">
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:800;color:var(--navy);margin-bottom:4px;">Share this meetup 📅</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:2px;">Send this link — friends open it and add their hours</div>
+      <div class="share-box">
+        <div class="share-code" id="share-code-display">—</div>
+        <button class="copy-btn" id="copy-btn" onclick="handleCopyCode()">Copy link</button>
+      </div>
+
+      <hr class="divider">
+      <div class="row">
+        <div class="flex-1"></div>
+        <button class="btn btn-sm" onclick="handleResetApp()">New meetup</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var HOURS = [];
+for (var h = 8; h <= 22; h++) {
+  HOURS.push(h); // 8am to 10pm (22:00 = last slot start)
+}
+// Display label for an hour
+function hourLabel(h) {
+  if (h === 12) return '12 PM';
+  if (h === 0)  return '12 AM';
+  return h < 12 ? h + ' AM' : (h - 12) + ' PM';
+}
+
+var state = {
+  eventName: '',
+  dates: [],
+  creatorName: '',
+  responderName: '',
+  responses: {}, // { name: { 'YYYY-MM-DD:HH': 'free'|'busy' } }
+  currentView: 0,
+  shareCode: ''
+};
+
+var COLORS = ['#002B5C','#E85234','#4A7AB5','#E8896E','#C05A4A','#1A4A80','#8A3A2C'];
+var dragMode = 'free';    // current paint mode
+var isDragging = false;
+var dragStatus = 'free';  // what we're painting during this drag
+
+window.addEventListener('load', function() {
+  var today = new Date();
+  var nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 6);
+  document.getElementById('date-from').value = fmt(today);
+  document.getElementById('date-to').value   = fmt(nextWeek);
+  loadFromHash();
+});
+
+window.addEventListener('mouseup',  function() { isDragging = false; });
+window.addEventListener('touchend', function() { isDragging = false; });
+
+function loadFromHash() {
+  var hash = window.location.hash.slice(1);
+  if (!hash) return;
+  try {
+    var data = JSON.parse(decodeURIComponent(atob(hash)));
+    if (data.eventName && data.dates) {
+      document.getElementById('join-code').value = hash;
+      showJoin();
+    }
+  } catch(e) {}
+}
+
+function fmt(d) { return d.toISOString().slice(0, 10); }
+
+function parseDates(from, to) {
+  var dates = [];
+  var cur = new Date(from + 'T00:00:00');
+  var end = new Date(to   + 'T00:00:00');
+  while (cur <= end) {
+    dates.push(fmt(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
+
+function dayShort(iso) {
+  var d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short' }) + ' ' +
+         d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function showView(n) {
+  var views = document.querySelectorAll('.view');
+  for (var i = 0; i < views.length; i++) {
+    views[i].style.display = (i === n) ? 'block' : 'none';
+  }
+  var dots = document.querySelectorAll('.step-dot');
+  for (var i = 0; i < dots.length; i++) {
+    dots[i].classList.remove('active', 'done');
+    if (i === n) dots[i].classList.add('active');
+    if (i <  n) dots[i].classList.add('done');
+  }
+  state.currentView = n;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goBack() { showView(0); }
+function showJoin() { document.getElementById('join-area').style.display = 'block'; }
+
+function setMode(m) {
+  dragMode = m;
+  document.getElementById('mode-free').className = 'mode-btn' + (m === 'free' ? ' active-free' : '');
+  document.getElementById('mode-busy').className = 'mode-btn' + (m === 'busy' ? ' active-busy' : '');
+}
+
+// ── CREATE ──
+function handleCreateEvent() {
+  var name    = document.getElementById('event-name').value.trim();
+  var from    = document.getElementById('date-from').value;
+  var to      = document.getElementById('date-to').value;
+  var creator = document.getElementById('creator-name').value.trim();
+  if (!name)        { alert('Please enter an event name.');           return; }
+  if (!from || !to) { alert('Please choose a date range.');           return; }
+  if (new Date(from) > new Date(to)) { alert('End date must be after start date.'); return; }
+  if (!creator)     { alert('Please enter your name.');               return; }
+
+  state.eventName     = name;
+  state.dates         = parseDates(from, to);
+  state.creatorName   = creator;
+  state.responderName = creator;
+  state.responses     = {};
+
+  document.getElementById('avail-event-title').textContent      = name;
+  document.getElementById('responder-name-display').textContent = creator;
+  buildAvailGrid();
+  showView(1);
+}
+
+// ── JOIN ──
+function handleJoinEvent() {
+  var code       = document.getElementById('join-code').value.trim();
+  var joinerName = document.getElementById('join-name').value.trim();
+  if (!code)       { alert('Paste the meetup link or code.'); return; }
+  if (!joinerName) { alert('Enter your name.');               return; }
+  if (code.indexOf('#') !== -1) code = code.split('#').pop();
+  try {
+    var data = JSON.parse(decodeURIComponent(atob(code)));
+    state.eventName     = data.eventName;
+    state.dates         = data.dates;
+    state.responses     = data.responses || {};
+    state.responderName = joinerName;
+    state.shareCode     = code;
+    document.getElementById('avail-event-title').textContent      = state.eventName;
+    document.getElementById('responder-name-display').textContent = joinerName;
+    buildAvailGrid();
+    showView(1);
+  } catch(e) {
+    alert('Invalid code. Make sure you pasted it correctly.');
+  }
+}
+
+// ── AVAILABILITY GRID ──
+var currentSelections = {}; // { 'YYYY-MM-DD:HH': 'free'|'busy'|'unset' }
+
+function slotKey(date, hour) { return date + ':' + hour; }
+
+function buildAvailGrid() {
+  currentSelections = {};
+  var grid = document.getElementById('avail-grid');
+  grid.innerHTML = '';
+
+  var numDays = state.dates.length;
+  // Set grid columns: time label + one per day
+  grid.style.gridTemplateColumns = '52px ' + Array(numDays).fill('1fr').join(' ');
+
+  // Header row
+  var timeHead = document.createElement('div');
+  timeHead.className = 'grid-header-cell time-col';
+  timeHead.textContent = '';
+  grid.appendChild(timeHead);
+
+  for (var d = 0; d < state.dates.length; d++) {
+    var hd = document.createElement('div');
+    hd.className = 'grid-header-cell';
+    hd.textContent = dayShort(state.dates[d]);
+    grid.appendChild(hd);
+  }
+
+  // Hour rows
+  for (var hi = 0; hi < HOURS.length; hi++) {
+    var hour = HOURS[hi];
+    // time label
+    var tl = document.createElement('div');
+    tl.className = 'time-label';
+    tl.textContent = hourLabel(hour);
+    grid.appendChild(tl);
+
+    for (var di = 0; di < state.dates.length; di++) {
+      var date = state.dates[di];
+      var key  = slotKey(date, hour);
+      currentSelections[key] = 'unset';
+
+      var slot = document.createElement('div');
+      slot.className = 'slot unset';
+      slot.dataset.key = key;
+
+      // Mouse events
+      slot.addEventListener('mousedown',  onSlotMouseDown);
+      slot.addEventListener('mouseenter', onSlotMouseEnter);
+      slot.addEventListener('touchstart', onSlotTouchStart, { passive: true });
+      slot.addEventListener('touchmove',  onSlotTouchMove,  { passive: true });
+
+      grid.appendChild(slot);
+    }
+  }
+}
+
+function paintSlot(key, status) {
+  currentSelections[key] = status;
+  var el = document.querySelector('[data-key="' + key + '"]');
+  if (el) el.className = 'slot ' + status;
+}
+
+function onSlotMouseDown(e) {
+  isDragging  = true;
+  dragStatus  = dragMode;
+  var key = this.dataset.key;
+  // toggle off if already same status
+  if (currentSelections[key] === dragStatus) {
+    dragStatus = 'unset';
+  }
+  paintSlot(key, dragStatus);
+}
+
+function onSlotMouseEnter(e) {
+  if (!isDragging) return;
+  paintSlot(this.dataset.key, dragStatus);
+}
+
+function onSlotTouchStart(e) {
+  isDragging = true;
+  dragStatus = dragMode;
+  var key = this.dataset.key;
+  if (currentSelections[key] === dragStatus) dragStatus = 'unset';
+  paintSlot(key, dragStatus);
+}
+
+function onSlotTouchMove(e) {
+  if (!isDragging) return;
+  var touch = e.touches[0];
+  var el = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (el && el.dataset && el.dataset.key) {
+    paintSlot(el.dataset.key, dragStatus);
+  }
+}
+
+// ── SUBMIT ──
+function handleSubmitAvailability() {
+  var name = state.responderName;
+  if (!state.responses[name]) state.responses[name] = {};
+  var keys = Object.keys(currentSelections);
+  for (var i = 0; i < keys.length; i++) {
+    state.responses[name][keys[i]] = currentSelections[keys[i]];
+  }
+  buildResults();
+  showView(2);
+}
+
+// ── RESULTS HEATMAP ──
+function buildResults() {
+  var names = Object.keys(state.responses);
+  var total = names.length;
+
+  document.getElementById('results-event-title').textContent = state.eventName;
+  document.getElementById('results-sub').textContent =
+    total + (total === 1 ? ' person has' : ' people have') + ' responded — share the link for more!';
+
+  // Participants
+  var pList = document.getElementById('participant-list');
+  pList.innerHTML = '';
+  for (var i = 0; i < names.length; i++) {
+    var chip = document.createElement('div');
+    chip.className = 'participant-chip';
+    chip.innerHTML = '<div class="chip-avatar" style="background:' + COLORS[i % COLORS.length] + '">' +
+                     names[i][0].toUpperCase() + '</div>' + names[i];
+    pList.appendChild(chip);
+  }
+
+  // Heatmap grid
+  var grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+  var numDays = state.dates.length;
+  grid.style.gridTemplateColumns = '52px ' + Array(numDays).fill('1fr').join(' ');
+
+  // Header
+  var th = document.createElement('div');
+  th.className = 'heat-header-cell time-col';
+  grid.appendChild(th);
+  for (var d = 0; d < state.dates.length; d++) {
+    var hd = document.createElement('div');
+    hd.className = 'heat-header-cell';
+    hd.textContent = dayShort(state.dates[d]);
+    grid.appendChild(hd);
+  }
+
+  // Rows
+  for (var hi = 0; hi < HOURS.length; hi++) {
+    var hour = HOURS[hi];
+    var tl = document.createElement('div');
+    tl.className = 'heat-time';
+    tl.textContent = hourLabel(hour);
+    grid.appendChild(tl);
+
+    for (var di = 0; di < state.dates.length; di++) {
+      var date = state.dates[di];
+      var key  = slotKey(date, hour);
+
+      // Count free people for this slot
+      var freeCount = 0;
+      var freeNames = [];
+      for (var ni = 0; ni < names.length; ni++) {
+        var r = state.responses[names[ni]];
+        if (r && r[key] === 'free') { freeCount++; freeNames.push(names[ni]); }
+      }
+
+      var pct = total > 0 ? freeCount / total : 0;
+      var cell = document.createElement('div');
+      cell.className = 'heat-cell';
+
+      // Color: navy at full, peach at partial, light grey at 0
+      var bar = document.createElement('div');
+      bar.className = 'heat-bar';
+      if (freeCount === 0) {
+        bar.style.background = '#F0F0F0';
+      } else if (pct === 1) {
+        bar.style.background = 'rgba(0,43,92,' + (0.3 + pct * 0.7) + ')';
+      } else {
+        bar.style.background = 'rgba(249,184,175,' + (0.4 + pct * 0.6) + ')';
+      }
+
+      var label = document.createElement('div');
+      label.className = 'heat-label';
+      label.textContent = freeCount + '/' + total;
+      if (freeCount === 0) label.style.color = '#999';
+
+      cell.appendChild(bar);
+      cell.appendChild(label);
+      grid.appendChild(cell);
+    }
+  }
+
+  updateShareCode();
+}
+
+function updateShareCode() {
+  var payload = { eventName: state.eventName, dates: state.dates, responses: state.responses };
+  state.shareCode = btoa(encodeURIComponent(JSON.stringify(payload)));
+  var url = window.location.href.split('#')[0] + '#' + state.shareCode;
+  document.getElementById('share-code-display').textContent = url;
+}
+
+function handleCopyCode() {
+  var url = window.location.href.split('#')[0] + '#' + state.shareCode;
+  navigator.clipboard.writeText(url).then(function() {
+    var btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = 'Copy link';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+function handleResetApp() {
+  state = { eventName:'', dates:[], creatorName:'', responderName:'', responses:{}, currentView:0, shareCode:'' };
+  document.getElementById('event-name').value   = '';
+  document.getElementById('creator-name').value = '';
+  document.getElementById('join-code').value    = '';
+  document.getElementById('join-name').value    = '';
+  document.getElementById('join-area').style.display = 'none';
+  var today = new Date();
+  var nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 6);
+  document.getElementById('date-from').value = fmt(today);
+  document.getElementById('date-to').value   = fmt(nextWeek);
+  showView(0);
+}
+</script>
+</body>
+</html>
